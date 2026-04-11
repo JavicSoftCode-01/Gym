@@ -16,12 +16,16 @@ class CustomerPlanService {
         if (plan.type === entities_1.PlanType.MONTHLY) {
             end.setMonth(end.getMonth() + 1);
         }
-        else {
-            // Hora: mismo día de operación
-            end.setDate(end.getDate() + 1);
+        if (plan.type === entities_1.PlanType.DAILY) {
+            if (!data.scheduleIds || data.scheduleIds.length === 0) {
+                throw new Error("Selecciona al menos un horario para planes diarios.");
+            }
+            if (this.customerPlanRepo.existsScheduleConflictForCustomer(data.customerId, data.scheduleIds)) {
+                throw new Error("El cliente ya tiene otra suscripción en los mismos horarios seleccionados.");
+            }
         }
         const yearMonth = start.toISOString().slice(0, 7);
-        if (this.customerPlanRepo.existsPlanForCustomerInMonth(data.customerId, data.planId, yearMonth)) {
+        if (plan.type === entities_1.PlanType.MONTHLY && this.customerPlanRepo.existsPlanForCustomerInMonth(data.customerId, data.planId, yearMonth)) {
             throw new Error("El cliente ya tiene este plan contratado para el mismo mes.");
         }
         // Al asignar un plan siempre entra como PENDING (aún no ha pagado)
@@ -29,7 +33,7 @@ class CustomerPlanService {
             ...data,
             startDate: start,
             endDate: end,
-            hours: data.hours ?? 1,
+            hours: plan.type === entities_1.PlanType.DAILY ? data.scheduleIds?.length ?? 1 : data.hours ?? 1,
             status: entities_1.CustomerPlanStatus.PENDING
         }, userId); // 🌟 pasa userId
     }
@@ -47,10 +51,16 @@ class CustomerPlanService {
         const end = new Date(start);
         if (plan.type === entities_1.PlanType.MONTHLY)
             end.setMonth(end.getMonth() + 1);
-        else
-            end.setDate(end.getDate() + 1);
+        if (plan.type === entities_1.PlanType.DAILY) {
+            if (!data.scheduleIds || data.scheduleIds.length === 0) {
+                throw new Error("Selecciona al menos un horario para planes diarios.");
+            }
+            if (this.customerPlanRepo.existsScheduleConflictForCustomer(data.customerId, data.scheduleIds, id)) {
+                throw new Error("El cliente ya tiene otra suscripción en los mismos horarios seleccionados.");
+            }
+        }
         const yearMonth = start.toISOString().slice(0, 7);
-        if (this.customerPlanRepo.existsPlanForCustomerInMonth(data.customerId, data.planId, yearMonth, id)) {
+        if (plan.type === entities_1.PlanType.MONTHLY && this.customerPlanRepo.existsPlanForCustomerInMonth(data.customerId, data.planId, yearMonth, id)) {
             throw new Error("El cliente ya tiene este plan contratado para el mismo mes.");
         }
         this.customerPlanRepo.update(id, {
@@ -58,7 +68,8 @@ class CustomerPlanService {
             planId: data.planId,
             startDate: start,
             endDate: end,
-            hours: data.hours ?? existing.hours ?? 1
+            hours: plan.type === entities_1.PlanType.DAILY ? data.scheduleIds?.length ?? existing.hours ?? 1 : data.hours ?? existing.hours ?? 1,
+            scheduleIds: data.scheduleIds
         }, userId);
         return this.customerPlanRepo.findById(id);
     }

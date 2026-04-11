@@ -88,6 +88,7 @@ export class CustomerPlan {
      */
     status!: CustomerPlanStatus;
     hours?: number;
+    scheduleIds?: number[];
 
     customer?: Customer;
     plan?: Plan;

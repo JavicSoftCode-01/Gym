@@ -67,6 +67,17 @@ export function initializeSchema(): void {
             FOREIGN KEY (schedule_id) REFERENCES schedules (id)
         );
 
+        CREATE TABLE IF NOT EXISTS customer_plan_schedules
+        (
+            customer_plan_id INTEGER NOT NULL,
+            schedule_id      INTEGER NOT NULL,
+            created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (customer_plan_id, schedule_id),
+            FOREIGN KEY (customer_plan_id) REFERENCES customer_plans (id),
+            FOREIGN KEY (schedule_id) REFERENCES schedules (id)
+        );
+
         CREATE TABLE IF NOT EXISTS customer_plans
         (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,

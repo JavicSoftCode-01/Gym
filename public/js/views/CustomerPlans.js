@@ -26,6 +26,8 @@ export async function renderCustomerPlans(container) {
             .cp-slot-button { width: 100%; text-align: left; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: #e5e7eb; padding: 12px; border-radius: 10px; cursor: pointer; transition: all .15s ease; }
             .cp-slot-button:hover { transform: translateY(-1px); border-color: rgba(56,189,248,0.9); background: rgba(56,189,248,0.16); }
             .cp-slot-button.selected { border-color: #38bdf8; background: rgba(56,189,248,0.25); box-shadow: inset 0 0 0 1px rgba(56,189,248,0.8); }
+            .cp-slot-button.blocked { opacity: 0.55; cursor: not-allowed; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.12); }
+            .cp-slot-button.blocked:hover { transform: none; background: rgba(248,113,113,0.12); }
             .cp-schedule-table td { padding: 5px; vertical-align: top; }
             @media (max-width: 820px) {
                 .cp-modal-grid { grid-template-columns: 1fr; }
@@ -58,7 +60,7 @@ export async function renderCustomerPlans(container) {
 
         <!-- CustomerPlan Modal -->
         <div id="cpModal" class="modal-backdrop hidden">
-            <div class="glass-panel modal-content border-glow" style="max-width: 700px;">
+            <div class="glass-panel modal-content border-glow" style="max-width: 900px;">
                 <div class="modal-header">
                     <h3 id="cp-modal-title">Registrar suscripción</h3>
                     <button class="close-modal">&times;</button>
@@ -67,33 +69,66 @@ export async function renderCustomerPlans(container) {
                 <form id="cpForm">
                     <input type="hidden" id="cp-id">
                     <div class="cp-modal-grid">
-                        <div>
-                            <div class="form-group">
-                                <label>Cliente</label>
-                                <select id="cp-customer" class="form-control" required>
-                                    <option value="">Cargando clientes...</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Plan a Adquirir</label>
-                                <select id="cp-plan" class="form-control" required>
-                                    <option value="">Cargando planes...</option>
-                                </select>
-                            </div>
-                            <small id="cp-plan-note" class="text-secondary" style="font-size:0.8rem; display:block; margin-top:-6px;">
-                                Selecciona un cliente para ver los planes disponibles.
-                            </small>
-                            <div id="cp-hours-container" class="form-group hidden">
-                                <label>Horas a Contratar</label>
-                                <input type="number" id="cp-hours" class="form-control" min="1" step="1" placeholder="1">
-                                <small id="cp-hours-note" class="text-secondary" style="font-size:0.78rem; display:block; margin-top:6px;">
-                                    Este plan se cobra por hora. El total es precio x horas.
+                        <div class="cp-form-column">
+                            <div class="cp-section">
+                                <div class="form-group">
+                                    <label>Cliente</label>
+                                    <select id="cp-customer" class="form-control" required>
+                                        <option value="">Cargando clientes...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Plan a Adquirir</label>
+                                    <select id="cp-plan" class="form-control" required>
+                                        <option value="">Cargando planes...</option>
+                                    </select>
+                                </div>
+                                <div style="margin-top: -4px;">
+                                    <small id="cp-plan-note" class="text-secondary" style="font-size:0.82rem; display:block; color:#b8b8b8;">
+                                        Selecciona un cliente para ver los planes disponibles.
+                                    </small>
+                                </div>
+                                <div id="cp-hours-container" class="form-group hidden">
+                                    <label>Horas a Contratar</label>
+                                    <input type="number" id="cp-hours" class="form-control" min="1" step="1" placeholder="1">
+                                    <small id="cp-hours-note" class="text-secondary" style="font-size:0.78rem; display:block; margin-top:6px; color:#b8b8b8;">
+                                        Este plan se cobra por hora. Selecciona el horario en el calendario para fijar las horas a pagar.
+                                    </small>
+                                </div>
+                                <small class="text-secondary" style="font-size:0.8rem; display:block; margin-top:-6px; color:#b8b8b8;">
+                                <br>
+                                    El sistema asigna automáticamente la vigencia según el tipo (hora o mensual).
                                 </small>
                             </div>
-                            <small class="text-secondary" style="font-size:0.8rem; display:block; margin-top:-6px;">
-                                El sistema asigna automáticamente la vigencia según el tipo (hora o mensual).
-                            </small>
+
+                            <div id="payment-section" class="cp-section">
+                            <br>
+                                <h4 style="margin:0 0 14px; color:#f8fafc;">Pago inicial (opcional)</h4>
+                                <div class="form-group">
+                                    <label>Método de Pago</label>
+                                    <select id="cp-pay-method" class="form-control">
+                                        <option value="">Seleccione método...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Monto a Pagar ($)</label>
+                                    <input type="number" id="cp-pay-amount" class="form-control" step="0.01" min="0.00" placeholder="0.00">
+                                </div>
+                                <div id="receipt-upload" class="form-group hidden">
+                                    <label>Adjuntar Comprobante (Opcional)</label>
+                                    <input type="file" id="cp-pay-receipt" class="form-control" accept="image/*">
+                                </div>
+                                <small id="payment-remaining" class="text-secondary" style="font-size:0.78rem; display:none; color:#b8b8b8;"></small>
+                                <small class="text-secondary" style="font-size:0.78rem; display:block; margin-top:6px; color:#b8b8b8;">
+                                    Si deja los campos de pago vacíos, la suscripción se guardará como pendiente.
+                                </small>
+                            </div>
+
+                            <div id="payment-history-container" class="cp-section" style="display: none;">
+                            <br>
+                                <label style="display: block; margin-bottom: 10px; font-weight: 700; color:#f8fafc;">Historial de pagos</label>
+                                <div id="payment-history-list" class="payment-history"></div>
+                            </div>
                         </div>
                         <div id="cp-schedule-panel" class="cp-schedule-panel hidden">
                             <h4>Calendario del plan</h4>
@@ -103,39 +138,9 @@ export async function renderCustomerPlans(container) {
                         </div>
                     </div>
 
-                    <div id="payment-section" style="margin-top: 24px;">
-                        <h4 style="margin-bottom: 16px; color: #d8d8d8;">Pago inicial (opcional)</h4>
-                        <div class="form-group">
-                            <label>Método de Pago</label>
-                            <select id="cp-pay-method" class="form-control">
-                                <option value="">Seleccione método...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Monto a Pagar ($)</label>
-                            <input type="number" id="cp-pay-amount" class="form-control" step="0.01" min="0.00" placeholder="0.00">
-                        </div>
-
-                        <div id="receipt-upload" class="form-group hidden">
-                            <label>Adjuntar Comprobante (Opcional)</label>
-                            <input type="file" id="cp-pay-receipt" class="form-control" accept="image/*">
-                        </div>
-
-                        <small id="payment-remaining" class="text-secondary" style="font-size:0.78rem; display:none; margin-top:-6px;"></small>
-                        <small class="text-secondary" style="font-size:0.78rem; display:block; margin-top:6px;">
-                            Si deja los campos de pago vacíos, la suscripción se guardará como pendiente.
-                        </small>
-                    </div>
-
-                    <div id="payment-history-container" style="display: none; margin-top: 24px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Historial de pagos</label>
-                        <div id="payment-history-list" class="payment-history"></div>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; margin-top: 24px">
-                        <button type="button" class="btn btn-secondary close-modal" style="flex:1">CANCELAR</button>
-                        <button type="submit" class="btn btn-primary" style="flex:1" id="cp-submit-btn">ASIGNAR PLAN</button>
+                    <div class="cp-actions">
+                        <button type="button" class="btn btn-secondary close-modal">CANCELAR</button>
+                        <button type="submit" class="btn btn-primary" id="cp-submit-btn">ASIGNAR PLAN</button>
                     </div>
                 </form>
             </div>
@@ -158,6 +163,7 @@ export async function renderCustomerPlans(container) {
     let allPayments = [];
     let allCustomers = [];
     let allServices = [];
+    let allCustomerPlans = [];
     let currentCustomerPlanId = null;
     let currentAssignment = {
         originalCustomerId: null,
@@ -165,6 +171,7 @@ export async function renderCustomerPlans(container) {
         hasPayments: false
     };
     let currentPlanSchedules = [];
+    let currentRelatedPayments = [];
     let selectedScheduleIds = new Set();
 
     const loadData = async () => {
@@ -183,6 +190,7 @@ export async function renderCustomerPlans(container) {
             allPayments = payments;
             allCustomers = customers;
             allServices = services;
+            allCustomerPlans = subs;
             
             const tbody = document.getElementById('cp-table');
             tbody.innerHTML = subs.map(s => {
@@ -197,8 +205,8 @@ export async function renderCustomerPlans(container) {
                 <tr>
                     <td style="font-weight: 500">${customer ? customer.fullName : 'N/A'}</td>
                     <td>${serv ? serv.title : 'N/A'} <small class="text-secondary">(${plan ? typeEs(plan.type) : ''})</small></td>
-                    <td class="text-secondary">${new Date(s.startDate || s.start_date).toLocaleDateString()}</td>
-                    <td class="text-secondary">${new Date(s.endDate || s.end_date).toLocaleDateString()}</td>
+                    <td class="text-secondary">${plan && plan.type === 'daily' ? '-' : new Date(s.startDate || s.start_date).toLocaleDateString()}</td>
+                    <td class="text-secondary">${plan && plan.type === 'daily' ? '-' : new Date(s.endDate || s.end_date).toLocaleDateString()}</td>
                     <td><span class="badge ${statusBadge}">${statusEs(s.status)}</span></td>
                     <td class="text-right">
                         <button class="btn btn-icon btn-secondary edit-cp" data-id="${s.id}" data-customer="${s.customerId || s.customer_id}" data-plan="${s.planId || s.plan_id}" data-hours="${s.hours || s.hours === 0 ? s.hours : 1}">
@@ -229,7 +237,7 @@ export async function renderCustomerPlans(container) {
             populatePlanSelect();
 
             document.querySelectorAll('.edit-cp').forEach(btn => {
-                btn.onclick = () => openModal(
+                btn.onclick = async () => await openModal(
                     btn.dataset.id,
                     btn.dataset.customer,
                     btn.dataset.plan,
@@ -323,9 +331,13 @@ export async function renderCustomerPlans(container) {
         const remaining = selectedPlan ? Math.max(0, totalDue - totalPaid) : null;
 
         if (remaining !== null) {
-            remainingLabel.textContent = selectedPlan && selectedPlan.type === 'daily'
-                ? `Total a pagar: $${totalDue.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`
-                : `Saldo restante: $${remaining.toFixed(2)}`;
+            if (selectedPlan && selectedPlan.type === 'daily' && totalPaid > 0) {
+                remainingLabel.textContent = `Saldo restante: $${remaining.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`;
+            } else {
+                remainingLabel.textContent = selectedPlan && selectedPlan.type === 'daily'
+                    ? `Total a pagar: $${totalDue.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`
+                    : `Saldo restante: $${remaining.toFixed(2)}`;
+            }
             remainingLabel.style.display = remaining > 0 ? 'block' : 'none';
             payAmountInput.max = remaining > 0 ? remaining : 0;
             payAmountInput.placeholder = remaining > 0 ? remaining.toFixed(2) : '0.00';
@@ -361,7 +373,7 @@ export async function renderCustomerPlans(container) {
 
     const buildSlotKey = (day, hour) => `${day}|${hour}`;
 
-    const renderPlanSchedulePanel = (schedules, hours, totalAmount) => {
+    const renderPlanSchedulePanel = (schedules, hours, totalAmount, blockedScheduleIds = new Set()) => {
         const panel = document.getElementById('cp-schedule-panel');
         const content = document.getElementById('cp-schedule-content');
 
@@ -388,11 +400,13 @@ export async function renderCustomerPlans(container) {
                     return `<td></td>`;
                 }
                 const selected = selectedScheduleIds.has(String(schedule.id));
+                const blocked = blockedScheduleIds.has(schedule.id) && !selected;
                 return `
                     <td>
-                        <button type="button" class="cp-slot-button ${selected ? 'selected' : ''}" data-schedule-id="${schedule.id}" data-day="${day}" data-hour="${hour}">
+                        <button type="button" class="cp-slot-button ${selected ? 'selected' : ''} ${blocked ? 'blocked' : ''}" data-schedule-id="${schedule.id}" data-day="${day}" data-hour="${hour}" ${blocked ? 'disabled' : ''}>
                             <div>${day}</div>
                             <div>${hour.toString().padStart(2, '0')}:00 - ${(hour + 1).toString().padStart(2, '0')}:00</div>
+                            ${blocked ? '<div style="margin-top:4px; font-size:0.78rem; color:#fca5a5;">Horario ocupado</div>' : ''}
                         </button>
                     </td>
                 `;
@@ -427,7 +441,7 @@ export async function renderCustomerPlans(container) {
 
         document.getElementById('cp-hours').value = hours.toString();
         if (selectedPlan) {
-            updatePaymentConstraints(selectedPlan, [], hours);
+            updatePaymentConstraints(selectedPlan, currentRelatedPayments, hours);
         }
 
         const summary = document.querySelector('.cp-schedule-summary');
@@ -439,7 +453,26 @@ export async function renderCustomerPlans(container) {
         }
     };
 
-    const updateDailyPlanSchedule = async (selectedPlan, customerId, hours = 0) => {
+    const getCustomerBlockedScheduleIds = (customerId, ownPlanId = null) => {
+        const blocked = new Set();
+        if (!customerId) return blocked;
+
+        const parsedCustomerId = parseInt(customerId, 10);
+        const parsedOwnPlanId = ownPlanId ? parseInt(ownPlanId, 10) : null;
+
+        allCustomerPlans.forEach(plan => {
+            const planCustomerId = plan.customerId || plan.customer_id;
+            const planId = plan.id || plan.planId;
+            if (planCustomerId !== parsedCustomerId) return;
+            if (parsedOwnPlanId && planId === parsedOwnPlanId) return;
+            const scheduleIds = Array.isArray(plan.scheduleIds) ? plan.scheduleIds : [];
+            scheduleIds.forEach(id => blocked.add(id));
+        });
+
+        return blocked;
+    };
+
+    const updateDailyPlanSchedule = async (selectedPlan, customerId, hours = 0, preselectedScheduleIds = null) => {
         if (!selectedPlan || selectedPlan.type !== 'daily' || customerHasInscription(customerId)) {
             document.getElementById('cp-schedule-panel').classList.add('hidden');
             selectedScheduleIds.clear();
@@ -450,8 +483,12 @@ export async function renderCustomerPlans(container) {
         try {
             currentPlanSchedules = await apiFetch(`/plan-schedules/${selectedPlan.id}`);
             selectedScheduleIds.clear();
+            if (Array.isArray(preselectedScheduleIds)) {
+                preselectedScheduleIds.forEach(id => selectedScheduleIds.add(String(id)));
+            }
             const totalAmount = parseFloat(selectedPlan.price) * hours;
-            renderPlanSchedulePanel(currentPlanSchedules, hours, totalAmount);
+            const blockedScheduleIds = getCustomerBlockedScheduleIds(customerId, currentCustomerPlanId);
+            renderPlanSchedulePanel(currentPlanSchedules, hours, totalAmount, blockedScheduleIds);
         } catch (error) {
             document.getElementById('cp-schedule-panel').classList.add('hidden');
             currentPlanSchedules = [];
@@ -459,7 +496,7 @@ export async function renderCustomerPlans(container) {
         }
     };
 
-    const openModal = (id = '', customerId = '', planId = '', hours = 1, payments = [], plans = []) => {
+    const openModal = async (id = '', customerId = '', planId = '', hours = 1, payments = [], plans = []) => {
         currentCustomerPlanId = id;
         document.getElementById('cp-id').value = id;
         document.getElementById('cp-customer').value = customerId || '';
@@ -474,6 +511,17 @@ export async function renderCustomerPlans(container) {
         currentAssignment.originalCustomerId = customerId || null;
         currentAssignment.originalPlanId = planId || null;
         currentAssignment.hasPayments = relatedPayments.length > 0;
+        currentRelatedPayments = relatedPayments;
+
+        let preselectedScheduleIds = [];
+        if (id && selectedPlan && selectedPlan.type === 'daily') {
+            try {
+                const assignment = await apiFetch(`/customer-plans/${id}`);
+                preselectedScheduleIds = Array.isArray(assignment.scheduleIds) ? assignment.scheduleIds : [];
+            } catch (error) {
+                console.warn('No se pudieron cargar los horarios guardados:', error);
+            }
+        }
 
         populatePlanSelect(customerId, planId);
 
@@ -510,8 +558,9 @@ export async function renderCustomerPlans(container) {
         form.querySelector('#cp-customer').value = customerId || '';
         form.querySelector('#cp-plan').value = planId || '';
 
-        updatePlanDetails(selectedPlan, relatedPayments, parseInt(hours, 10) || 1);
-        updateDailyPlanSchedule(selectedPlan, customerId, parseInt(hours, 10) || 1);
+        const initialHours = preselectedScheduleIds.length > 0 ? preselectedScheduleIds.length : (parseInt(hours, 10) || 1);
+        updatePlanDetails(selectedPlan, relatedPayments, initialHours);
+        updateDailyPlanSchedule(selectedPlan, customerId, initialHours, preselectedScheduleIds);
 
         document.getElementById('cp-customer').disabled = currentAssignment.hasPayments;
         document.getElementById('cp-plan').disabled = currentAssignment.hasPayments;
@@ -519,7 +568,7 @@ export async function renderCustomerPlans(container) {
         modal.classList.remove('hidden');
     };
 
-    document.getElementById('add-cp-btn').onclick = () => openModal();
+    document.getElementById('add-cp-btn').onclick = async () => await openModal();
     document.querySelectorAll('.close-modal').forEach(b => b.onclick = () => {
         modal.classList.add('hidden');
         form.reset();
@@ -542,6 +591,7 @@ export async function renderCustomerPlans(container) {
         const relatedPayments = currentCustomerPlanId
             ? allPayments.filter(p => p.customerPlanId == currentCustomerPlanId || p.customer_plan_id == currentCustomerPlanId)
             : [];
+        currentRelatedPayments = relatedPayments;
         selectedScheduleIds.clear();
         updatePlanDetails(selectedPlan, relatedPayments, 0);
         await updateDailyPlanSchedule(selectedPlan, document.getElementById('cp-customer').value, 0);
@@ -591,7 +641,9 @@ export async function renderCustomerPlans(container) {
             customerId: parseInt(document.getElementById('cp-customer').value, 10),
             planId
         };
-        if (hours !== null) payload.hours = hours;
+        if (selectedPlan && selectedPlan.type === 'daily') {
+            payload.scheduleIds = Array.from(selectedScheduleIds).map(id => parseInt(id, 10));
+        }
 
         const paymentMethodId = document.getElementById('cp-pay-method').value;
         const paymentAmount = parseFloat(document.getElementById('cp-pay-amount').value);
@@ -613,9 +665,19 @@ export async function renderCustomerPlans(container) {
         const totalPaid = relatedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
         const remaining = Math.max(0, totalDue - totalPaid);
 
-        if (selectedPlan && selectedPlan.type === 'daily' && hasPayment && paymentAmount !== totalDue) {
-            showToast(`Para planes por hora, el pago debe ser el monto completo de $${totalDue.toFixed(2)}.`, 'error');
-            return;
+        if (selectedPlan && selectedPlan.type === 'daily') {
+            const blockedScheduleIds = getCustomerBlockedScheduleIds(payload.customerId, id || null);
+            const chosenScheduleIds = Array.isArray(payload.scheduleIds) ? payload.scheduleIds : [];
+            const conflicting = chosenScheduleIds.filter(sId => blockedScheduleIds.has(sId));
+            if (conflicting.length > 0) {
+                showToast('Una o más horas seleccionadas ya están ocupadas por otra suscripción del mismo cliente.', 'error');
+                return;
+            }
+
+            if (hasPayment && paymentAmount !== remaining) {
+                showToast(`Para planes por hora, el pago debe ser el monto exacto restante de $${remaining.toFixed(2)}.`, 'error');
+                return;
+            }
         }
 
         if (hasPayment && paymentAmount > remaining) {

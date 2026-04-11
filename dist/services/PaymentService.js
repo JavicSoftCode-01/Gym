@@ -27,11 +27,8 @@ class PaymentService {
             throw new Error("El monto del pago debe ser mayor a cero.");
         }
         if (plan.type === entities_1.PlanType.DAILY) {
-            if (existingPayments.length > 0) {
-                throw new Error("Los planes por hora deben pagarse en una sola exhibición.");
-            }
-            if (data.amount !== fullAmount) {
-                throw new Error(`Los planes por hora se pagan completos. El monto exacto es $${fullAmount.toFixed(2)}.`);
+            if (data.amount !== remainingAmount) {
+                throw new Error(`Los planes por hora se pagan completos. El monto exacto es $${remainingAmount.toFixed(2)}.`);
             }
         }
         if (data.amount > remainingAmount) {
@@ -43,7 +40,7 @@ class PaymentService {
         const allPayments = this.paymentRepo.getPaymentsByPlan(data.customerPlanId);
         const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
         let newStatus = entities_1.CustomerPlanStatus.PARTIAL;
-        if (totalPaid >= plan.price) {
+        if (totalPaid >= fullAmount) {
             newStatus = entities_1.CustomerPlanStatus.PAID;
         }
         this.customerPlanRepo.updateStatus(data.customerPlanId, newStatus);

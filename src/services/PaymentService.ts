@@ -38,11 +38,8 @@ export class PaymentService {
         }
 
         if (plan.type === PlanType.DAILY) {
-            if (existingPayments.length > 0) {
-                throw new Error("Los planes por hora deben pagarse en una sola exhibición.");
-            }
-            if (data.amount !== fullAmount) {
-                throw new Error(`Los planes por hora se pagan completos. El monto exacto es $${fullAmount.toFixed(2)}.`);
+            if (data.amount !== remainingAmount) {
+                throw new Error(`Los planes por hora se pagan completos. El monto exacto es $${remainingAmount.toFixed(2)}.`);
             }
         }
 
@@ -58,7 +55,7 @@ export class PaymentService {
         const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
 
         let newStatus = CustomerPlanStatus.PARTIAL;
-        if (totalPaid >= plan.price) {
+        if (totalPaid >= fullAmount) {
             newStatus = CustomerPlanStatus.PAID;
         }
 
