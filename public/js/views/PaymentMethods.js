@@ -51,7 +51,8 @@ export async function renderPaymentMethods(container) {
         try {
             const data = await apiFetch('/payment-methods');
             const tbody = document.getElementById('pm-list');
-            tbody.innerHTML = data.map(pm => `
+            const filteredData = data.filter(pm => pm.name.toUpperCase() !== 'REEMBOLSO');
+            tbody.innerHTML = filteredData.map(pm => `
                 <tr>
                     <td style="font-weight: 500">${pm.name}</td>
                     <td class="text-secondary">${new Date(pm.createdAt).toLocaleString()}</td>

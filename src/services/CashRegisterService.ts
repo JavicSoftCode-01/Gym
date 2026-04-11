@@ -17,7 +17,7 @@ export class CashRegisterService {
 
         const isCashLike = (name: string) => {
             const n = name.toLowerCase();
-            return n.includes("efectivo") || n.includes("cash");
+            return n.includes("efectivo") || n.includes("cash") || n.includes("reembolso");
         };
 
         payments.forEach(p => {

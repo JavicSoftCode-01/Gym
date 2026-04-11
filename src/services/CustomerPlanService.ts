@@ -107,7 +107,7 @@ export class CustomerPlanService {
                 const adjustmentAmount = newTotalPrice - totalPaid; // Será negativo
                 
                 // Buscar el método de pago de ajuste
-                const refundMethod = db.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('Reembolso/Ajuste') as { id: number };
+                const refundMethod = db.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('REEMBOLSO') as { id: number };
                 
                 if (refundMethod) {
                     this.paymentRepo.create({

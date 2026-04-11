@@ -19,7 +19,7 @@ class CashRegisterService {
         let expectedDeposit = 0;
         const isCashLike = (name) => {
             const n = name.toLowerCase();
-            return n.includes("efectivo") || n.includes("cash");
+            return n.includes("efectivo") || n.includes("cash") || n.includes("reembolso");
         };
         payments.forEach(p => {
             const name = (p.methodName || "").trim();

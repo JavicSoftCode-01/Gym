@@ -232,7 +232,7 @@ export async function renderCustomerPlans(container) {
                 }).join('');
 
             document.getElementById('cp-pay-method').innerHTML = '<option value="">Seleccione método...</option>' + 
-                methods.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                methods.filter(m => m.name.toUpperCase() !== 'REEMBOLSO').map(m => `<option value="${m.id}">${m.name}</option>`).join('');
 
             populatePlanSelect();
 
@@ -542,7 +542,7 @@ export async function renderCustomerPlans(container) {
                 historyList.innerHTML = relatedPayments.map(p => {
                     const date = new Date(p.paidAt || p.paid_at).toLocaleDateString();
                     const isAdjustment = p.type === 'adjustment';
-                    const label = isAdjustment ? 'Ajuste por reducción' : 'Pago registrado';
+                    const label = isAdjustment ? 'REEMBOLSO' : 'Pago registrado';
                     const amountColor = isAdjustment ? 'var(--danger)' : '#4ade80';
                     const amountPrefix = p.amount > 0 ? '+$' : '$';
                     
@@ -725,6 +725,11 @@ export async function renderCustomerPlans(container) {
             let customerPlanId = id;
             if (id) {
                 await apiFetch(`/customer-plans/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                if (remaining < 0) {
+                    const customer = allCustomers.find(c => c.id == payload.customerId);
+                    const refundAmount = Math.abs(remaining).toFixed(2);
+                    showToast(`Reembolso al Cliente "${customer ? customer.fullName : 'N/A'}" por un valor de $${refundAmount}`, 'warning');
+                }
             } else {
                 const newSubscription = await apiFetch('/customer-plans', { method: 'POST', body: JSON.stringify(payload) });
                 customerPlanId = newSubscription.id;

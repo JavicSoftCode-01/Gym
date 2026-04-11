@@ -106,7 +106,7 @@ export async function renderPayments(container) {
 
             const methodSelect = document.getElementById('pay-method');
             methodSelect.innerHTML = '<option value="">Seleccione método...</option>' + 
-                methods.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                methods.filter(m => m.name.toUpperCase() !== 'REEMBOLSO').map(m => `<option value="${m.id}">${m.name}</option>`).join('');
 
         } catch (e) {}
     };

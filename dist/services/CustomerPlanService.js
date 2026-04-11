@@ -90,7 +90,7 @@ class CustomerPlanService {
             if (totalPaid > newTotalPrice) {
                 const adjustmentAmount = newTotalPrice - totalPaid; // Será negativo
                 // Buscar el método de pago de ajuste
-                const refundMethod = database_1.default.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('Reembolso/Ajuste');
+                const refundMethod = database_1.default.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('REEMBOLSO');
                 if (refundMethod) {
                     this.paymentRepo.create({
                         customerPlanId: id,

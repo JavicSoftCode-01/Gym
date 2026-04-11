@@ -284,10 +284,10 @@ function initializeSchema() {
             CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_methods_name_nocase
             ON payment_methods (name COLLATE NOCASE);
         `);
-        // 5) Seed "Reembolso/Ajuste" payment method if missing
-        const refundMethod = database_1.default.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('Reembolso/Ajuste');
+        // 5) Seed "REEMBOLSO" payment method if missing
+        const refundMethod = database_1.default.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('REEMBOLSO');
         if (!refundMethod) {
-            database_1.default.exec(`INSERT INTO payment_methods (name, created_at, updated_at) VALUES ('Reembolso/Ajuste', datetime('now'), datetime('now'));`);
+            database_1.default.exec(`INSERT INTO payment_methods (name, created_at, updated_at) VALUES ('REEMBOLSO', datetime('now'), datetime('now'));`);
         }
         database_1.default.exec(`PRAGMA foreign_keys = ON;`);
     }
