@@ -542,9 +542,13 @@ export async function renderCustomerPlans(container) {
                 historyList.innerHTML = relatedPayments.map(p => {
                     const date = new Date(p.paidAt || p.paid_at).toLocaleDateString();
                     const isAdjustment = p.type === 'adjustment';
-                    const label = isAdjustment ? 'REEMBOLSO' : 'Pago registrado';
+                    const methodId = p.paymentMethodId || p.payment_method_id;
+                    const method = allPaymentMethods.find(m => m.id == methodId);
+                    
+                    const label = isAdjustment ? 'REEMBOLSO' : (method ? `Pago en ${method.name}` : 'Pago registrado');
                     const amountColor = isAdjustment ? 'var(--danger)' : '#4ade80';
                     const amountPrefix = p.amount > 0 ? '+$' : '$';
+                    const receiptPath = p.receiptImagePath || p.receipt_image_path;
                     
                     return `
                         <div class="payment-item">
@@ -552,7 +556,10 @@ export async function renderCustomerPlans(container) {
                                 <div style="font-weight: 600; margin-bottom: 2px;">${label}</div>
                                 <div class="payment-date">${date}</div>
                             </div>
-                            <div class="payment-amount" style="color: ${amountColor}">${amountPrefix}${p.amount.toFixed(2)}</div>
+                            <div style="text-align: right">
+                                <div class="payment-amount" style="color: ${amountColor}">${amountPrefix}${p.amount.toFixed(2)}</div>
+                                ${receiptPath ? `<a href="${receiptPath}" target="_blank" style="font-size: 0.75rem; color: #38bdf8; text-decoration: none;"><i class="fa-solid fa-image"></i> Ver recibo</a>` : ''}
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -742,25 +749,17 @@ export async function renderCustomerPlans(container) {
                     amount: paymentAmount
                 };
 
-                const submitPayment = async (payloadWithReceipt) => {
-                    await apiFetch('/payments', { method: 'POST', body: JSON.stringify(payloadWithReceipt) });
-                };
-
                 if (fileInput.files[0]) {
-                    const reader = new FileReader();
-                    reader.onloadend = async () => {
-                        paymentPayload.receiptImagePath = reader.result;
-                        await submitPayment(paymentPayload);
-                        showToast(finalSuccessMessage, 'success');
-                        modal.classList.add('hidden');
-                        form.reset();
-                        loadData();
-                    };
-                    reader.readAsDataURL(fileInput.files[0]);
-                    return;
-                } else {
-                    await submitPayment(paymentPayload);
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(fileInput.files[0]);
+                    });
+                    paymentPayload.receiptImagePath = base64;
                 }
+
+                await apiFetch('/payments', { method: 'POST', body: JSON.stringify(paymentPayload) });
             }
 
             showToast(finalSuccessMessage, 'success');

@@ -43,7 +43,14 @@ export async function apiFetch(endpoint, options = {}) {
             headers
         });
 
-        const data = response.status !== 204 ? await response.json() : null;
+        let data = null;
+        const contentType = response.headers.get("content-type");
+        if (response.status !== 204 && contentType && contentType.includes("application/json")) {
+            data = await response.json();
+        } else if (response.status !== 204) {
+            const text = await response.text();
+            data = { error: text || `Error ${response.status}` };
+        }
 
         if (!response.ok) {
             if (response.status === 401) {

@@ -18,8 +18,9 @@ const planSchedule_routes_1 = __importDefault(require("./routes/planSchedule.rou
 const cashRegister_routes_1 = __importDefault(require("./routes/cashRegister.routes")); // 🌟 Caja
 const inscription_routes_1 = __importDefault(require("./routes/inscription.routes"));
 const app = (0, express_1.default)();
-const PORT = 5200;
-app.use(express_1.default.json());
+const PORT = 800;
+app.use(express_1.default.json({ limit: '50mb' }));
+app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 app.use(express_1.default.static(path_1.default.join(__dirname, "../public")));
 (0, database_1.initializeSchema)();
 app.use("/api/auth", auth_routes_1.default);

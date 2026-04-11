@@ -1,13 +1,17 @@
-import { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
 import { ICustomerPlanRepository } from "../repositories/interfaces/ICustomerPlanRepository";
-import { IPlanRepository } from "../repositories/interfaces/IPlanRepository";
 import { CustomerPlanStatus, PlanType } from "../domain/entities";
+import { IPlanRepository } from "../repositories/interfaces/IPlanRepository";
+import { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
+import { ICustomerRepository } from "../repositories/interfaces/ICustomerRepository";
+import fs from "fs";
+import path from "path";
 
 export class PaymentService {
     constructor(
         private paymentRepo: IPaymentRepository,
         private customerPlanRepo: ICustomerPlanRepository,
-        private planRepo: IPlanRepository
+        private planRepo: IPlanRepository,
+        private customerRepo: ICustomerRepository
     ) {}
 
     getAllPayments() {
@@ -45,6 +49,34 @@ export class PaymentService {
 
         if (data.amount > remainingAmount) {
             throw new Error(`El pago no puede exceder el saldo restante de $${remainingAmount.toFixed(2)}.`);
+        }
+
+        // Si hay una imagen en base64, guardarla físicamente
+        if (data.receiptImagePath && data.receiptImagePath.startsWith('data:image')) {
+            try {
+                const customer = this.customerRepo.findById(planAssignment.customerId);
+                const safeName = (customer?.fullName || 'Desconocido').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                
+                // Extraer extensión del base64
+                const extension = data.receiptImagePath.split(';')[0].split('/')[1] || 'png';
+                const fileName = `recibo_${safeName}_${timestamp}.${extension}`;
+                const uploadDir = path.join(__dirname, "../../public/uploads/receipts");
+
+                if (!fs.existsSync(uploadDir)) {
+                    fs.mkdirSync(uploadDir, { recursive: true });
+                }
+
+                const base64Data = data.receiptImagePath.replace(/^data:image\/\w+;base64,/, "");
+                fs.writeFileSync(path.join(uploadDir, fileName), base64Data, 'base64');
+
+                // Guardar la ruta relativa en la DB
+                data.receiptImagePath = `/uploads/receipts/${fileName}`;
+            } catch (error: any) {
+                console.error("Error al guardar la imagen del recibo:", error);
+                // No lanzamos error para no bloquear el pago si falla el guardado de imagen, 
+                // o podrías elegir lanzarlo según preferencia del cliente.
+            }
         }
 
         // Registrar el pago con auditoría (SQLite no acepta objetos Date como bind param)

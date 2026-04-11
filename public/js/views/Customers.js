@@ -19,7 +19,6 @@ export async function renderCustomers(container) {
                         <th>Inscripción</th>
                         <th>Valor</th>
                         <th>Creado el</th>
-                        <th>Actualizado el</th>
                         <th class="text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -80,7 +79,6 @@ export async function renderCustomers(container) {
                     <td class="text-secondary">${inscription ? inscription.name : 'Sin inscripción'}</td>
                     <td class="text-secondary">${inscription ? `$${inscription.price.toFixed(2)}` : '-'}</td>
                     <td class="text-secondary">${new Date(c.createdAt || c.created_at).toLocaleString()}</td>
-                    <td class="text-secondary">${new Date(c.updatedAt || c.updated_at).toLocaleString()}</td>
                     <td class="text-right">
                         <button class="btn btn-icon btn-secondary edit-customer" data-id="${c.id}" data-name="${c.fullName}" data-contact="${c.contact}" data-inscription-id="${c.inscriptionId ?? ''}">
                             <i class="fa-solid fa-pen-to-square"></i>
