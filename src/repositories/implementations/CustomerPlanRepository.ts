@@ -9,12 +9,18 @@ export class CustomerPlanRepository implements ICustomerPlanRepository {
         const now = new Date().toISOString();
         const stmt = db.prepare(`
             INSERT INTO customer_plans
-                (customer_id, plan_id, start_date, end_date, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (customer_id, plan_id, start_date, end_date, hours, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const result = stmt.run(
-            data.customerId, data.planId,
-            data.startDate.toISOString(), data.endDate.toISOString(), data.status, now, now
+            data.customerId,
+            data.planId,
+            data.startDate.toISOString(),
+            data.endDate.toISOString(),
+            data.hours ?? 1,
+            data.status,
+            now,
+            now
         );
 
         const newId = result.lastInsertRowid as number;
@@ -34,7 +40,7 @@ export class CustomerPlanRepository implements ICustomerPlanRepository {
         return Boolean(row?.ok);
     }
 
-    update(id: number, data: { customerId: number; planId: number; startDate: Date; endDate: Date }, userId: number): void {
+    update(id: number, data: { customerId: number; planId: number; startDate: Date; endDate: Date; hours?: number }, userId: number): void {
         const now = new Date().toISOString();
         db.prepare(`
             UPDATE customer_plans
@@ -42,6 +48,7 @@ export class CustomerPlanRepository implements ICustomerPlanRepository {
                 plan_id = ?,
                 start_date = ?,
                 end_date = ?,
+                hours = ?,
                 status = ?,
                 updated_at = ?
             WHERE id = ?
@@ -50,11 +57,12 @@ export class CustomerPlanRepository implements ICustomerPlanRepository {
             data.planId,
             data.startDate.toISOString(),
             data.endDate.toISOString(),
+            data.hours ?? 1,
             CustomerPlanStatus.PENDING,
             now,
             id
         );
-        AuditRepository.log(userId, "UPDATE", "customer_plans", id, { customerId: data.customerId, planId: data.planId });
+        AuditRepository.log(userId, "UPDATE", "customer_plans", id, { customerId: data.customerId, planId: data.planId, hours: data.hours ?? 1 });
     }
 
     delete(id: number, userId: number): void {
@@ -70,6 +78,7 @@ export class CustomerPlanRepository implements ICustomerPlanRepository {
                    plan_id as planId,
                    start_date as startDate,
                    end_date as endDate,
+                   hours,
                    status,
                    created_at as createdAt,
                    updated_at as updatedAt
@@ -85,10 +94,28 @@ export class CustomerPlanRepository implements ICustomerPlanRepository {
                    plan_id as planId,
                    start_date as startDate,
                    end_date as endDate,
+                   hours,
                    status,
                    created_at as createdAt,
                    updated_at as updatedAt
             FROM customer_plans
         `).all() as CustomerPlan[];
+    }
+
+    existsPlanForCustomerInMonth(customerId: number, planId: number, yearMonth: string, excludeId?: number): boolean {
+        let sql = `
+            SELECT 1 as ok
+            FROM customer_plans
+            WHERE customer_id = ?
+              AND plan_id = ?
+              AND substr(start_date, 1, 7) = ?
+        `;
+        const params: Array<number | string> = [customerId, planId, yearMonth];
+        if (excludeId) {
+            sql += ` AND id != ?`;
+            params.push(excludeId);
+        }
+        const row = db.prepare(sql).get(...params) as { ok: 1 } | undefined;
+        return Boolean(row?.ok);
     }
 }

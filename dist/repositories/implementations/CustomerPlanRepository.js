@@ -12,10 +12,10 @@ class CustomerPlanRepository {
         const now = new Date().toISOString();
         const stmt = database_1.default.prepare(`
             INSERT INTO customer_plans
-                (customer_id, plan_id, start_date, end_date, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (customer_id, plan_id, start_date, end_date, hours, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        const result = stmt.run(data.customerId, data.planId, data.startDate.toISOString(), data.endDate.toISOString(), data.status, now, now);
+        const result = stmt.run(data.customerId, data.planId, data.startDate.toISOString(), data.endDate.toISOString(), data.hours ?? 1, data.status, now, now);
         const newId = result.lastInsertRowid;
         // 🌟 Auditoría
         AuditRepository_1.AuditRepository.log(userId, "CREATE", "customer_plans", newId, data);
@@ -37,11 +37,12 @@ class CustomerPlanRepository {
                 plan_id = ?,
                 start_date = ?,
                 end_date = ?,
+                hours = ?,
                 status = ?,
                 updated_at = ?
             WHERE id = ?
-        `).run(data.customerId, data.planId, data.startDate.toISOString(), data.endDate.toISOString(), entities_1.CustomerPlanStatus.PENDING, now, id);
-        AuditRepository_1.AuditRepository.log(userId, "UPDATE", "customer_plans", id, { customerId: data.customerId, planId: data.planId });
+        `).run(data.customerId, data.planId, data.startDate.toISOString(), data.endDate.toISOString(), data.hours ?? 1, entities_1.CustomerPlanStatus.PENDING, now, id);
+        AuditRepository_1.AuditRepository.log(userId, "UPDATE", "customer_plans", id, { customerId: data.customerId, planId: data.planId, hours: data.hours ?? 1 });
     }
     delete(id, userId) {
         const current = this.findById(id);
@@ -56,6 +57,7 @@ class CustomerPlanRepository {
                    plan_id as planId,
                    start_date as startDate,
                    end_date as endDate,
+                   hours,
                    status,
                    created_at as createdAt,
                    updated_at as updatedAt
@@ -70,11 +72,28 @@ class CustomerPlanRepository {
                    plan_id as planId,
                    start_date as startDate,
                    end_date as endDate,
+                   hours,
                    status,
                    created_at as createdAt,
                    updated_at as updatedAt
             FROM customer_plans
         `).all();
+    }
+    existsPlanForCustomerInMonth(customerId, planId, yearMonth, excludeId) {
+        let sql = `
+            SELECT 1 as ok
+            FROM customer_plans
+            WHERE customer_id = ?
+              AND plan_id = ?
+              AND substr(start_date, 1, 7) = ?
+        `;
+        const params = [customerId, planId, yearMonth];
+        if (excludeId) {
+            sql += ` AND id != ?`;
+            params.push(excludeId);
+        }
+        const row = database_1.default.prepare(sql).get(...params);
+        return Boolean(row?.ok);
     }
 }
 exports.CustomerPlanRepository = CustomerPlanRepository;

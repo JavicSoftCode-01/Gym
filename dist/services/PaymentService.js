@@ -18,15 +18,21 @@ class PaymentService {
         const plan = this.planRepo.findById(planAssignment.planId);
         if (!plan)
             throw new Error("Plan base no encontrado");
-        // Regla: Si es Diario, el pago debe ser el total
-        if (plan.type === entities_1.PlanType.DAILY && data.amount < plan.price) {
-            throw new Error("Los planes diarios deben pagarse completos en una sola exhibición.");
-        }
+        const hours = planAssignment.hours ?? 1;
+        const fullAmount = plan.type === entities_1.PlanType.DAILY ? plan.price * hours : plan.price;
         const existingPayments = this.paymentRepo.getPaymentsByPlan(data.customerPlanId);
         const totalPaidSoFar = existingPayments.reduce((sum, p) => sum + p.amount, 0);
-        const remainingAmount = plan.price - totalPaidSoFar;
+        const remainingAmount = Math.max(0, fullAmount - totalPaidSoFar);
         if (data.amount <= 0) {
             throw new Error("El monto del pago debe ser mayor a cero.");
+        }
+        if (plan.type === entities_1.PlanType.DAILY) {
+            if (existingPayments.length > 0) {
+                throw new Error("Los planes por hora deben pagarse en una sola exhibición.");
+            }
+            if (data.amount !== fullAmount) {
+                throw new Error(`Los planes por hora se pagan completos. El monto exacto es $${fullAmount.toFixed(2)}.`);
+            }
         }
         if (data.amount > remainingAmount) {
             throw new Error(`El pago no puede exceder el saldo restante de $${remainingAmount.toFixed(2)}.`);

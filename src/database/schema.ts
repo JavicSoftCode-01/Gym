@@ -74,6 +74,7 @@ export function initializeSchema(): void {
             plan_id         INTEGER NOT NULL,
             start_date      TEXT    NOT NULL,
             end_date        TEXT    NOT NULL,
+            hours           INTEGER NOT NULL DEFAULT 1,
             status          TEXT    NOT NULL DEFAULT 'pending'
                 CHECK (status IN ('pending', 'partial', 'paid', 'expired')),
             created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
@@ -171,6 +172,7 @@ export function initializeSchema(): void {
         // 1) customer_plans: drop registration_id if it exists
         const cpCols = db.prepare(`PRAGMA table_info(customer_plans)`).all() as { name: string }[];
         const hasRegistrationId = cpCols.some(c => c.name === "registration_id");
+        const hasHoursColumn = cpCols.some(c => c.name === "hours");
         if (hasRegistrationId) {
             db.exec(`
                 CREATE TABLE IF NOT EXISTS customer_plans_new
@@ -180,6 +182,7 @@ export function initializeSchema(): void {
                     plan_id     INTEGER NOT NULL,
                     start_date  TEXT    NOT NULL,
                     end_date    TEXT    NOT NULL,
+                    hours       INTEGER NOT NULL DEFAULT 1,
                     status      TEXT    NOT NULL DEFAULT 'pending'
                         CHECK (status IN ('pending', 'partial', 'paid', 'expired')),
                     created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
@@ -189,12 +192,16 @@ export function initializeSchema(): void {
                 );
             `);
             db.exec(`
-                INSERT INTO customer_plans_new (id, customer_id, plan_id, start_date, end_date, status, created_at, updated_at)
-                SELECT id, customer_id, plan_id, start_date, end_date, status, created_at, updated_at
+                INSERT INTO customer_plans_new (id, customer_id, plan_id, start_date, end_date, hours, status, created_at, updated_at)
+                SELECT id, customer_id, plan_id, start_date, end_date, COALESCE(hours, 1), status, created_at, updated_at
                 FROM customer_plans;
             `);
             db.exec(`DROP TABLE customer_plans;`);
             db.exec(`ALTER TABLE customer_plans_new RENAME TO customer_plans;`);
+        }
+
+        if (!hasHoursColumn) {
+            db.exec(`ALTER TABLE customer_plans ADD COLUMN hours INTEGER NOT NULL DEFAULT 1;`);
         }
 
         // 2) plans: allow type 'enrollment' and nullable service_id

@@ -11,6 +11,7 @@ export class CustomerPlanService {
     assignPlanToCustomer(data: {
         customerId: number;
         planId: number;
+        hours?: number;
     }, userId: number) {
         const plan = this.planRepo.findById(data.planId);
         if (!plan) throw new Error("Plan base no encontrado");
@@ -20,8 +21,13 @@ export class CustomerPlanService {
         if (plan.type === PlanType.MONTHLY) {
             end.setMonth(end.getMonth() + 1);
         } else {
-            // Diario: mismo día (vigencia de operación)
+            // Hora: mismo día de operación
             end.setDate(end.getDate() + 1);
+        }
+
+        const yearMonth = start.toISOString().slice(0, 7);
+        if (this.customerPlanRepo.existsPlanForCustomerInMonth(data.customerId, data.planId, yearMonth)) {
+            throw new Error("El cliente ya tiene este plan contratado para el mismo mes.");
         }
 
         // Al asignar un plan siempre entra como PENDING (aún no ha pagado)
@@ -29,11 +35,12 @@ export class CustomerPlanService {
             ...data,
             startDate: start,
             endDate: end,
+            hours: data.hours ?? 1,
             status: CustomerPlanStatus.PENDING
         }, userId); // 🌟 pasa userId
     }
 
-    updateAssignment(id: number, data: { customerId: number; planId: number }, userId: number) {
+    updateAssignment(id: number, data: { customerId: number; planId: number; hours?: number }, userId: number) {
         const existing = this.customerPlanRepo.findById(id);
         if (!existing) throw new Error("Suscripción no encontrada");
 
@@ -49,7 +56,18 @@ export class CustomerPlanService {
         if (plan.type === PlanType.MONTHLY) end.setMonth(end.getMonth() + 1);
         else end.setDate(end.getDate() + 1);
 
-        this.customerPlanRepo.update(id, { customerId: data.customerId, planId: data.planId, startDate: start, endDate: end }, userId);
+        const yearMonth = start.toISOString().slice(0, 7);
+        if (this.customerPlanRepo.existsPlanForCustomerInMonth(data.customerId, data.planId, yearMonth, id)) {
+            throw new Error("El cliente ya tiene este plan contratado para el mismo mes.");
+        }
+
+        this.customerPlanRepo.update(id, {
+            customerId: data.customerId,
+            planId: data.planId,
+            startDate: start,
+            endDate: end,
+            hours: data.hours ?? existing.hours ?? 1
+        }, userId);
         return this.customerPlanRepo.findById(id);
     }
 

@@ -87,6 +87,7 @@ export class CustomerPlan {
      * Mensual: PENDING → PARTIAL → PAID  (o EXPIRED si vence)
      */
     status!: CustomerPlanStatus;
+    hours?: number;
 
     customer?: Customer;
     plan?: Plan;
