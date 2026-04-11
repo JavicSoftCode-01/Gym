@@ -1,3 +1,4 @@
+// src/domain/entities.ts
 export abstract class BaseEntity {
     createdAt!: Date;
     updatedAt!: Date;
@@ -8,6 +9,14 @@ export class Customer extends BaseEntity {
     id!: number;
     fullName!: string;
     contact!: string;
+    inscriptionId?: number | null;
+}
+
+// 🎽 Inscription (Catálogo de uniformes)
+export class Inscription extends BaseEntity {
+    id!: number;
+    name!: string;
+    price!: number;
 }
 
 // 🏷️ Service
@@ -22,24 +31,6 @@ export class Schedule extends BaseEntity {
     date!: Date;
     startTime!: Date;
     endTime!: Date;
-}
-
-// 🎽 RegistrationType
-export class RegistrationType extends BaseEntity {
-    id!: number;
-    name!: string;
-    price!: number;
-}
-
-// 📝 Registration
-export class Registration extends BaseEntity {
-    id!: number;
-
-    customerId!: number;
-    registrationTypeId!: number;
-
-    customer?: Customer;
-    registrationType?: RegistrationType;
 }
 
 // 💰 Plan
@@ -84,7 +75,6 @@ export class CustomerPlan {
 
     customerId!: number;
     planId!: number;
-    registrationId!: number;
 
     startDate!: Date;
     endDate!: Date;
@@ -100,14 +90,13 @@ export class CustomerPlan {
 
     customer?: Customer;
     plan?: Plan;
-    registration?: Registration;
     payments?: Payment[];
 }
 
-// 💳 PaymentMethod
-export enum PaymentMethod {
-    CASH = "cash",
-    DEPOSIT = "deposit",
+// 💳 PaymentMethod (Para que el usuario registre los suyos)
+export class PaymentMethod extends BaseEntity {
+    id!: number;
+    name!: string;
 }
 
 // 💵 Payment
@@ -115,17 +104,49 @@ export class Payment extends BaseEntity {
     id!: number;
 
     customerPlanId!: number;
-    method!: PaymentMethod;
+    paymentMethodId!: number; // Ahora referenciamos la tabla
     amount!: number;
 
     /**
-     * Solo requerido cuando method === PaymentMethod.DEPOSIT.
+     * Solo requerido cuando el método lo amerite (ej. Depósito).
      * Guarda la ruta relativa de la imagen del recibo.
-     * Ej: "uploads/receipts/2024-01-15_recibo_42.jpg"
      */
     receiptImagePath?: string;
 
-    paidAt!: Date;
+    paidAt!: Date | string;
 
     customerPlan?: CustomerPlan;
+    paymentMethod?: PaymentMethod;
+}
+
+// 🛡️ SystemUser (Administradores / Staff)
+export class SystemUser extends BaseEntity {
+    id!: number;
+    contact!: string; // Se usará como "Usuario" para el Login
+    passwordHash!: string;
+    role!: string; // Ej: 'admin', 'staff'
+}
+
+// 🕵️ AuditLog (Auditoría)
+export class AuditLog extends BaseEntity {
+    id!: number;
+    userId!: number;
+    action!: "CREATE" | "UPDATE" | "DELETE";
+    tableName!: string;
+    recordId!: number;
+    details?: string; // JSON con los datos cambiados
+}
+
+// 💵 CashRegister (Cuadre de Caja)
+export class CashRegister extends BaseEntity {
+    id!: number;
+    userId!: number;
+    date!: string;
+    expectedCash!: number;
+    expectedDeposit!: number;
+    actualCash!: number;
+    actualDeposit!: number;
+    difference!: number;
+    dailyTotal!: number;
+    grandTotal!: number;
 }

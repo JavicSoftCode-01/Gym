@@ -1,3 +1,4 @@
+// src/repositories/interfaces/ICustomerRepository.ts
 import {Customer} from "../../domain/entities";
 
 export interface ICustomerRepository {
@@ -5,9 +6,9 @@ export interface ICustomerRepository {
 
     findById(id: number): Customer | undefined;
 
-    create(data: { fullName: string; contact: string }): Customer;
+    create(data: { fullName: string; contact: string }, userId: number): Customer;
 
-    update(id: number, data: Partial<{ fullName: string; contact: string }>): Customer | undefined;
+    update(id: number, data: Partial<{ fullName: string; contact: string }>, userId: number): Customer | undefined;
 
-    delete(id: number): boolean;
+    delete(id: number, userId: number): boolean;
 }
