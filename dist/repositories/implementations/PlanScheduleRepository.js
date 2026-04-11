@@ -7,6 +7,13 @@ exports.PlanScheduleRepository = void 0;
 const database_1 = __importDefault(require("../../database/database"));
 const AuditRepository_1 = require("./AuditRepository"); // 🌟
 class PlanScheduleRepository {
+    findAll() {
+        return database_1.default.prepare(`
+            SELECT plan_id as planId, schedule_id as scheduleId, created_at as createdAt, updated_at as updatedAt
+            FROM plan_schedules
+            ORDER BY plan_id, schedule_id
+        `).all();
+    }
     assignScheduleToPlan(planId, scheduleId, userId) {
         const now = new Date().toISOString();
         // INSERT OR IGNORE para evitar duplicados en la PK compuesta

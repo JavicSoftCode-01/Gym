@@ -23,10 +23,10 @@ function getLayout() {
                 </div>
                 <nav class="sidebar-nav">
                     <a href="#dashboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+                    <a href="#inscriptions" class="nav-item"><i class="fa-solid fa-shirt"></i> Inscripciones</a>
                     <a href="#customers" class="nav-item"><i class="fa-solid fa-users"></i> Clientes</a>
                     <a href="#schedules" class="nav-item"><i class="fa-solid fa-calendar-days"></i> Calendario</a>
                     <a href="#payment-methods" class="nav-item"><i class="fa-solid fa-credit-card"></i> Métodos de Pago</a>
-                    <a href="#inscriptions" class="nav-item"><i class="fa-solid fa-shirt"></i> Inscripciones</a>
                     <a href="#services" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Servicios</a>
                     <a href="#plans" class="nav-item"><i class="fa-solid fa-tags"></i> Planes</a>
                     <a href="#customer-plans" class="nav-item"><i class="fa-solid fa-address-card"></i> Suscripciones</a>

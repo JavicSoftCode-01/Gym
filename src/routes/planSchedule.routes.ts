@@ -12,6 +12,7 @@ const controller = new PlanScheduleController(service);
 // 🌟 Solo admins autenticados pueden asignar horarios a planes
 router.use(requireAuth);
 
+router.get("/", controller.getAll);
 router.post("/", controller.assign);
 router.get("/:planId", controller.getByPlan);
 

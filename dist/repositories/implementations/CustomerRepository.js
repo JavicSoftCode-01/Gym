@@ -55,7 +55,7 @@ class CustomerRepository {
                 inscription_id = ?,
                 updated_at = ?
             WHERE id = ?
-        `).run(data.fullName ?? current.fullName, data.contact ?? current.contact, data.inscriptionId ?? current.inscriptionId ?? null, now, id);
+        `).run(data.fullName ?? current.fullName, data.contact ?? current.contact, 'inscriptionId' in data ? data.inscriptionId : current.inscriptionId, now, id);
         // 🌟 Registrar auditoría
         AuditRepository_1.AuditRepository.log(userId, "UPDATE", "customers", id, data);
         return this.findById(id);

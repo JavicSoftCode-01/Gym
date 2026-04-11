@@ -62,7 +62,7 @@ export class CustomerRepository implements ICustomerRepository {
         `).run(
             data.fullName ?? current.fullName,
             data.contact ?? current.contact,
-            data.inscriptionId ?? current.inscriptionId ?? null,
+            'inscriptionId' in data ? data.inscriptionId : current.inscriptionId,
             now,
             id
         );

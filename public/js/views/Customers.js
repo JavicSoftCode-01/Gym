@@ -16,13 +16,15 @@ export async function renderCustomers(container) {
                     <tr>
                         <th>Nombre Completo</th>
                         <th>Contacto</th>
+                        <th>Inscripción</th>
+                        <th>Valor</th>
                         <th>Creado el</th>
                         <th>Actualizado el</th>
                         <th class="text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="customer-list">
-                    <tr><td colspan="5" class="text-center">Cargando clientes...</td></tr>
+                    <tr><td colspan="7" class="text-center">Cargando clientes...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -67,11 +69,16 @@ export async function renderCustomers(container) {
                 apiFetch('/inscriptions')
             ]);
             const tbody = document.getElementById('customer-list');
+            const inscriptionMap = new Map(inscriptions.map(i => [i.id, i]));
             
-            tbody.innerHTML = data.map(c => `
+            tbody.innerHTML = data.map(c => {
+                const inscription = c.inscriptionId ? inscriptionMap.get(c.inscriptionId) : null;
+                return `
                 <tr>
                     <td style="font-weight: 500">${c.fullName}</td>
                     <td class="text-secondary">${c.contact}</td>
+                    <td class="text-secondary">${inscription ? inscription.name : 'Sin inscripción'}</td>
+                    <td class="text-secondary">${inscription ? `$${inscription.price.toFixed(2)}` : '-'}</td>
                     <td class="text-secondary">${new Date(c.createdAt || c.created_at).toLocaleString()}</td>
                     <td class="text-secondary">${new Date(c.updatedAt || c.updated_at).toLocaleString()}</td>
                     <td class="text-right">
@@ -83,7 +90,8 @@ export async function renderCustomers(container) {
                         </button>
                     </td>
                 </tr>
-            `).join('') || '<tr><td colspan="5" class="text-center text-muted">No hay clientes registrados.</td></tr>';
+            `;
+            }).join('') || '<tr><td colspan="7" class="text-center text-muted">No hay clientes registrados.</td></tr>';
 
             const insSelect = document.getElementById('cust-inscription');
             insSelect.innerHTML =

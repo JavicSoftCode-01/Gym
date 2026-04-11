@@ -3,6 +3,10 @@ import { IPlanScheduleRepository } from "../repositories/interfaces/IPlanSchedul
 export class PlanScheduleService {
     constructor(private readonly repo: IPlanScheduleRepository) {}
 
+    getAll() {
+        return this.repo.findAll();
+    }
+
     assign(data: { planId: number; scheduleId: number }, userId: number) {
         if (!data.planId || !data.scheduleId) {
             throw new Error("Plan ID y Schedule ID son requeridos");

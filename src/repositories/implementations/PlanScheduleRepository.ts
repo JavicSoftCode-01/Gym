@@ -4,6 +4,14 @@ import { AuditRepository } from "./AuditRepository"; // 🌟
 
 export class PlanScheduleRepository implements IPlanScheduleRepository {
 
+    findAll(): any[] {
+        return db.prepare(`
+            SELECT plan_id as planId, schedule_id as scheduleId, created_at as createdAt, updated_at as updatedAt
+            FROM plan_schedules
+            ORDER BY plan_id, schedule_id
+        `).all();
+    }
+
     assignScheduleToPlan(planId: number, scheduleId: number, userId: number): void {
         const now = new Date().toISOString();
         // INSERT OR IGNORE para evitar duplicados en la PK compuesta

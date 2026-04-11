@@ -4,6 +4,14 @@ exports.PlanScheduleController = void 0;
 class PlanScheduleController {
     constructor(service) {
         this.service = service;
+        this.getAll = (req, res) => {
+            try {
+                res.json(this.service.getAll());
+            }
+            catch (error) {
+                res.status(500).json({ error: error.message });
+            }
+        };
         this.assign = (req, res) => {
             try {
                 const userId = req.user.id;

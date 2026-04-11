@@ -5,6 +5,14 @@ import { AuthRequest } from "../middlewares/auth.middleware"; // 🌟
 export class PlanScheduleController {
     constructor(private readonly service: PlanScheduleService) {}
 
+    getAll = (req: AuthRequest, res: Response) => {
+        try {
+            res.json(this.service.getAll());
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    };
+
     assign = (req: AuthRequest, res: Response) => {
         try {
             const userId = req.user!.id;

@@ -5,6 +5,9 @@ class PlanScheduleService {
     constructor(repo) {
         this.repo = repo;
     }
+    getAll() {
+        return this.repo.findAll();
+    }
     assign(data, userId) {
         if (!data.planId || !data.scheduleId) {
             throw new Error("Plan ID y Schedule ID son requeridos");
