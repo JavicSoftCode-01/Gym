@@ -35,7 +35,7 @@ class PaymentService {
             throw new Error(`El pago no puede exceder el saldo restante de $${remainingAmount.toFixed(2)}.`);
         }
         // Registrar el pago con auditoría (SQLite no acepta objetos Date como bind param)
-        const payment = this.paymentRepo.create({ ...data, paidAt: new Date().toISOString() }, userId); // 🌟
+        const payment = this.paymentRepo.create({ ...data, type: 'payment', paidAt: new Date().toISOString() }, userId); // 🌟
         // Recalcular estado del plan
         const allPayments = this.paymentRepo.getPaymentsByPlan(data.customerPlanId);
         const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);

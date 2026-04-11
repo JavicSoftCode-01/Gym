@@ -328,17 +328,21 @@ export async function renderCustomerPlans(container) {
         const totalDue = selectedPlan
             ? (selectedPlan.type === 'daily' ? planPrice * hours : planPrice)
             : 0;
-        const remaining = selectedPlan ? Math.max(0, totalDue - totalPaid) : null;
+        const remaining = selectedPlan ? (totalDue - totalPaid) : null;
 
         if (remaining !== null) {
-            if (selectedPlan && selectedPlan.type === 'daily' && totalPaid > 0) {
-                remainingLabel.textContent = `Saldo restante: $${remaining.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`;
+            if (selectedPlan && selectedPlan.type === 'daily') {
+                if (remaining < 0) {
+                    remainingLabel.textContent = `Cambio a devolver: $${Math.abs(remaining).toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`;
+                } else if (remaining === 0) {
+                    remainingLabel.textContent = `Saldo completo: $${totalDue.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`;
+                } else {
+                    remainingLabel.textContent = `Saldo restante: $${remaining.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`;
+                }
             } else {
-                remainingLabel.textContent = selectedPlan && selectedPlan.type === 'daily'
-                    ? `Total a pagar: $${totalDue.toFixed(2)} (${hours} hora(s) x $${planPrice.toFixed(2)})`
-                    : `Saldo restante: $${remaining.toFixed(2)}`;
+                remainingLabel.textContent = `Saldo restante: $${Math.max(0, remaining).toFixed(2)}`;
             }
-            remainingLabel.style.display = remaining > 0 ? 'block' : 'none';
+            remainingLabel.style.display = 'block';
             payAmountInput.max = remaining > 0 ? remaining : 0;
             payAmountInput.placeholder = remaining > 0 ? remaining.toFixed(2) : '0.00';
         } else {
@@ -523,20 +527,32 @@ export async function renderCustomerPlans(container) {
             }
         }
 
+        const initialHours = preselectedScheduleIds.length > 0 ? preselectedScheduleIds.length : (parseInt(hours, 10) || 1);
+
         populatePlanSelect(customerId, planId);
 
         if (id) {
             if (relatedPayments.length > 0) {
                 historyContainer.style.display = 'block';
+                const planPrice = selectedPlan ? parseFloat(selectedPlan.price) : 0;
+                const totalDue = selectedPlan && selectedPlan.type === 'daily'
+                    ? planPrice * initialHours
+                    : planPrice;
+                const totalPaid = relatedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
                 historyList.innerHTML = relatedPayments.map(p => {
                     const date = new Date(p.paidAt || p.paid_at).toLocaleDateString();
+                    const isAdjustment = p.type === 'adjustment';
+                    const label = isAdjustment ? 'Ajuste por reducción' : 'Pago registrado';
+                    const amountColor = isAdjustment ? 'var(--danger)' : '#4ade80';
+                    const amountPrefix = p.amount > 0 ? '+$' : '$';
+                    
                     return `
                         <div class="payment-item">
                             <div>
-                                <div style="font-weight: 600; margin-bottom: 2px;">Pago registrado</div>
+                                <div style="font-weight: 600; margin-bottom: 2px;">${label}</div>
                                 <div class="payment-date">${date}</div>
                             </div>
-                            <div class="payment-amount">+$${p.amount}</div>
+                            <div class="payment-amount" style="color: ${amountColor}">${amountPrefix}${p.amount.toFixed(2)}</div>
                         </div>
                     `;
                 }).join('');
@@ -558,7 +574,6 @@ export async function renderCustomerPlans(container) {
         form.querySelector('#cp-customer').value = customerId || '';
         form.querySelector('#cp-plan').value = planId || '';
 
-        const initialHours = preselectedScheduleIds.length > 0 ? preselectedScheduleIds.length : (parseInt(hours, 10) || 1);
         updatePlanDetails(selectedPlan, relatedPayments, initialHours);
         updateDailyPlanSchedule(selectedPlan, customerId, initialHours, preselectedScheduleIds);
 
@@ -663,7 +678,7 @@ export async function renderCustomerPlans(container) {
             ? (selectedPlan.type === 'daily' ? planPrice * hours : planPrice)
             : 0;
         const totalPaid = relatedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-        const remaining = Math.max(0, totalDue - totalPaid);
+        const remaining = totalDue - totalPaid;
 
         if (selectedPlan && selectedPlan.type === 'daily') {
             const blockedScheduleIds = getCustomerBlockedScheduleIds(payload.customerId, id || null);
@@ -674,13 +689,18 @@ export async function renderCustomerPlans(container) {
                 return;
             }
 
-            if (hasPayment && paymentAmount !== remaining) {
+            if (remaining < 0 && hasPayment) {
+                showToast(`No se puede registrar un pago adicional: hay un reembolso pendiente de $${Math.abs(remaining).toFixed(2)}.`, 'error');
+                return;
+            }
+
+            if (remaining >= 0 && hasPayment && paymentAmount !== remaining) {
                 showToast(`Para planes por hora, el pago debe ser el monto exacto restante de $${remaining.toFixed(2)}.`, 'error');
                 return;
             }
         }
 
-        if (hasPayment && paymentAmount > remaining) {
+        if (hasPayment && remaining >= 0 && paymentAmount > remaining) {
             showToast(`El pago no puede exceder el saldo restante de $${remaining.toFixed(2)}.`, 'error');
             return;
         }
@@ -704,9 +724,7 @@ export async function renderCustomerPlans(container) {
         try {
             let customerPlanId = id;
             if (id) {
-                if (!currentAssignment.hasPayments) {
-                    await apiFetch(`/customer-plans/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-                }
+                await apiFetch(`/customer-plans/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
             } else {
                 const newSubscription = await apiFetch('/customer-plans', { method: 'POST', body: JSON.stringify(payload) });
                 customerPlanId = newSubscription.id;

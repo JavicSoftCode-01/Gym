@@ -48,7 +48,7 @@ export class PaymentService {
         }
 
         // Registrar el pago con auditoría (SQLite no acepta objetos Date como bind param)
-        const payment = this.paymentRepo.create({ ...data, paidAt: new Date().toISOString() }, userId); // 🌟
+        const payment = this.paymentRepo.create({ ...data, type: 'payment', paidAt: new Date().toISOString() }, userId); // 🌟
 
         // Recalcular estado del plan
         const allPayments = this.paymentRepo.getPaymentsByPlan(data.customerPlanId);

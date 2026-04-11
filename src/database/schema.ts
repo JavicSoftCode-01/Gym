@@ -107,7 +107,8 @@ export function initializeSchema(): void {
             id                 INTEGER PRIMARY KEY AUTOINCREMENT,
             customer_plan_id   INTEGER NOT NULL,
             payment_method_id  INTEGER NOT NULL,
-            amount             REAL    NOT NULL CHECK (amount > 0),
+            amount             REAL    NOT NULL,
+            type               TEXT    NOT NULL DEFAULT 'payment' CHECK (type IN ('payment', 'adjustment')),
             receipt_image_path TEXT,
             paid_at            TEXT    NOT NULL DEFAULT (datetime('now')),
             created_at         TEXT    NOT NULL DEFAULT (datetime('now')),
@@ -172,6 +173,34 @@ export function initializeSchema(): void {
         }
         if (!custCols.some(c => c.name === "inscription_id")) {
             db.exec(`ALTER TABLE customers ADD COLUMN inscription_id INTEGER;`);
+        }
+
+        // 0.1) payments: add type column if missing and handle amount constraint
+        const payCols = db.prepare(`PRAGMA table_info(payments)`).all() as { name: string }[];
+        if (!payCols.some(c => c.name === "type")) {
+            // Recreate payments table to change constraint and add column
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS payments_new (
+                    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                    customer_plan_id   INTEGER NOT NULL,
+                    payment_method_id  INTEGER NOT NULL,
+                    amount             REAL    NOT NULL,
+                    type               TEXT    NOT NULL DEFAULT 'payment' CHECK (type IN ('payment', 'adjustment')),
+                    receipt_image_path TEXT,
+                    paid_at            TEXT    NOT NULL DEFAULT (datetime('now')),
+                    created_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+                    updated_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (customer_plan_id) REFERENCES customer_plans (id),
+                    FOREIGN KEY (payment_method_id) REFERENCES payment_methods (id)
+                );
+            `);
+            db.exec(`
+                INSERT INTO payments_new (id, customer_plan_id, payment_method_id, amount, type, receipt_image_path, paid_at, created_at, updated_at)
+                SELECT id, customer_plan_id, payment_method_id, amount, 'payment', receipt_image_path, paid_at, created_at, updated_at
+                FROM payments;
+            `);
+            db.exec(`DROP TABLE payments;`);
+            db.exec(`ALTER TABLE payments_new RENAME TO payments;`);
         }
 
         // inscriptions: unique names (case-insensitive)
@@ -259,6 +288,12 @@ export function initializeSchema(): void {
             CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_methods_name_nocase
             ON payment_methods (name COLLATE NOCASE);
         `);
+
+        // 5) Seed "Reembolso/Ajuste" payment method if missing
+        const refundMethod = db.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('Reembolso/Ajuste');
+        if (!refundMethod) {
+            db.exec(`INSERT INTO payment_methods (name, created_at, updated_at) VALUES ('Reembolso/Ajuste', datetime('now'), datetime('now'));`);
+        }
 
         db.exec(`PRAGMA foreign_keys = ON;`);
     } catch (e) {

@@ -108,6 +108,7 @@ export class Payment extends BaseEntity {
     customerPlanId!: number;
     paymentMethodId!: number; // Ahora referenciamos la tabla
     amount!: number;
+    type!: 'payment' | 'adjustment';
 
     /**
      * Solo requerido cuando el método lo amerite (ej. Depósito).
