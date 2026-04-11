@@ -30,7 +30,7 @@ function getLayout() {
                     <a href="#services" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Servicios</a>
                     <a href="#plans" class="nav-item"><i class="fa-solid fa-tags"></i> Planes</a>
                     <a href="#customer-plans" class="nav-item"><i class="fa-solid fa-address-card"></i> Suscripciones</a>
-                    <a href="#payments" class="nav-item"><i class="fa-solid fa-money-bills"></i> Pagos</a>
+                   <!-- <a href="#payments" class="nav-item"><i class="fa-solid fa-money-bills"></i> Pagos</a> -->
                     <a href="#cash" class="nav-item"><i class="fa-solid fa-cash-register"></i> Caja</a>
                     <a href="#logout" class="nav-item mt-2" style="color:var(--danger)"><i class="fa-solid fa-sign-out-alt"></i> Salir</a>
                 </nav>

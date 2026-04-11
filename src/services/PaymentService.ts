@@ -31,6 +31,18 @@ export class PaymentService {
             throw new Error("Los planes diarios deben pagarse completos en una sola exhibición.");
         }
 
+        const existingPayments = this.paymentRepo.getPaymentsByPlan(data.customerPlanId);
+        const totalPaidSoFar = existingPayments.reduce((sum, p) => sum + p.amount, 0);
+        const remainingAmount = plan.price - totalPaidSoFar;
+
+        if (data.amount <= 0) {
+            throw new Error("El monto del pago debe ser mayor a cero.");
+        }
+
+        if (data.amount > remainingAmount) {
+            throw new Error(`El pago no puede exceder el saldo restante de $${remainingAmount.toFixed(2)}.`);
+        }
+
         // Registrar el pago con auditoría (SQLite no acepta objetos Date como bind param)
         const payment = this.paymentRepo.create({ ...data, paidAt: new Date().toISOString() }, userId); // 🌟
 
