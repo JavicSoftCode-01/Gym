@@ -1,11 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { SystemUserRepository } from "../repositories/implementations/SystemUserRepository";
-
-const JWT_SECRET = "CLAVE_SECRETA_SUPER_SEGURA_GYM_2024"; // En producción debe ir en un archivo .env
+import { ISystemUserRepository } from "../repositories/interfaces/ISystemUserRepository";
+import { env } from "../config";
 
 export class AuthService {
-    constructor(private readonly repo: SystemUserRepository) {}
+    constructor(private readonly repo: ISystemUserRepository) {}
 
     // Registrar un nuevo administrador
     registerAdmin(data: { contact: string; password: string }) {
@@ -26,8 +25,10 @@ export class AuthService {
         const isValidPassword = bcrypt.compareSync(data.password, user.passwordHash);
         if (!isValidPassword) throw new Error("Credenciales inválidas");
 
-        // Generar Token válido por 8 horas
-        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "8h" });
+        // Generar Token JWT firmado con la configuración del entorno
+        const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, {
+            expiresIn: env.JWT_EXPIRES_IN as any
+        });
 
         return { token, user: { id: user.id, contact: user.contact, role: user.role } };
     }

@@ -1,7 +1,8 @@
 import db from "../../database/database";
 import { SystemUser } from "../../domain/entities";
+import { ISystemUserRepository } from "../interfaces/ISystemUserRepository";
 
-export class SystemUserRepository {
+export class SystemUserRepository implements ISystemUserRepository {
     findByContact(contact: string): SystemUser | undefined {
         return db.prepare(`
             SELECT id, contact, password_hash as passwordHash, role, created_at as createdAt, updated_at as updatedAt 
@@ -12,7 +13,7 @@ export class SystemUserRepository {
     create(data: { contact: string; passwordHash: string; role?: string }): SystemUser {
         const now = new Date().toISOString();
         const role = data.role || 'admin';
-        const result = db.prepare(`
+        db.prepare(`
             INSERT INTO system_users (contact, password_hash, role, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?)
         `).run(data.contact, data.passwordHash, role, now, now);

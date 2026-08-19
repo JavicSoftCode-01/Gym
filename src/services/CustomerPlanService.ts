@@ -2,13 +2,14 @@ import { ICustomerPlanRepository } from "../repositories/interfaces/ICustomerPla
 import { CustomerPlanStatus, PlanType } from "../domain/entities";
 import { IPlanRepository } from "../repositories/interfaces/IPlanRepository";
 import { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
-import db from "../database/database";
+import { IPaymentMethodRepository } from "../repositories/interfaces/IPaymentMethodRepository";
 
 export class CustomerPlanService {
     constructor(
         private customerPlanRepo: ICustomerPlanRepository,
         private planRepo: IPlanRepository,
-        private paymentRepo: IPaymentRepository
+        private paymentRepo: IPaymentRepository,
+        private paymentMethodRepo: IPaymentMethodRepository
     ) {}
 
     assignPlanToCustomer(data: {
@@ -47,7 +48,7 @@ export class CustomerPlanService {
             endDate: end,
             hours: plan.type === PlanType.DAILY ? data.scheduleIds?.length ?? 1 : data.hours ?? 1,
             status: CustomerPlanStatus.PENDING
-        }, userId); // 🌟 pasa userId
+        }, userId);
     }
 
     updateAssignment(id: number, data: { customerId: number; planId: number; hours?: number; scheduleIds?: number[] }, userId: number) {
@@ -106,8 +107,8 @@ export class CustomerPlanService {
             if (totalPaid > newTotalPrice) {
                 const adjustmentAmount = newTotalPrice - totalPaid; // Será negativo
                 
-                // Buscar el método de pago de ajuste
-                const refundMethod = db.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get('REEMBOLSO') as { id: number };
+                // Buscar el método de pago de ajuste a través del repositorio
+                const refundMethod = this.paymentMethodRepo.findByName('REEMBOLSO');
                 
                 if (refundMethod) {
                     this.paymentRepo.create({

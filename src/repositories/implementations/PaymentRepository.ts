@@ -13,12 +13,13 @@ export class PaymentRepository implements IPaymentRepository {
         const type = data.type || "payment";
         const stmt = db.prepare(`
             INSERT INTO payments
-                (customer_plan_id, payment_method_id, amount, type, receipt_image_path, paid_at, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (customer_plan_id, payment_method_id, cash_register_id, amount, type, receipt_image_path, paid_at, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const result = stmt.run(
             data.customerPlanId,
             data.paymentMethodId,
+            data.cashRegisterId,
             data.amount,
             type,
             data.receiptImagePath || null,
@@ -57,7 +58,7 @@ export class PaymentRepository implements IPaymentRepository {
 
     getPaymentsByPlan(customerPlanId: number): Payment[] {
         return db.prepare(`
-            SELECT id, customer_plan_id as customerPlanId, payment_method_id as paymentMethodId, amount,
+            SELECT id, customer_plan_id as customerPlanId, payment_method_id as paymentMethodId, cash_register_id as cashRegisterId, amount,
                    type, receipt_image_path as receiptImagePath,
                    paid_at as paidAt, created_at as createdAt, updated_at as updatedAt
             FROM payments

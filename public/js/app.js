@@ -11,6 +11,10 @@ import { renderSchedules } from './views/Schedules.js';
 import { renderCustomerPlans } from './views/CustomerPlans.js';
 import { renderPaymentMethods } from './views/PaymentMethods.js';
 import { renderInscriptions } from './views/Inscriptions.js';
+import { renderPOS } from './views/POS.js';
+import { renderProducts } from './views/Products.js';
+import { renderSuppliers } from './views/Suppliers.js';
+import { renderDiscounts } from './views/Discounts.js';
 
 const app = document.getElementById('app');
 
@@ -22,16 +26,19 @@ function getLayout() {
                     <span class="text-neon">GYM</span> PRO
                 </div>
                 <nav class="sidebar-nav">
+                    <a href="#pos" class="nav-item" style="color: var(--success); font-weight: 700;"><i class="fa-solid fa-cart-shopping"></i> Punto de Venta</a>
                     <a href="#dashboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
-                    <a href="#inscriptions" class="nav-item"><i class="fa-solid fa-shirt"></i> Inscripciones</a>
+                    <a href="#products" class="nav-item"><i class="fa-solid fa-bottle-water"></i> Productos & Stock</a>
+                    <a href="#suppliers" class="nav-item"><i class="fa-solid fa-truck-field"></i> Proveedores</a>
+                    <a href="#discounts" class="nav-item"><i class="fa-solid fa-tags"></i> Promociones</a>
                     <a href="#customers" class="nav-item"><i class="fa-solid fa-users"></i> Clientes</a>
-                    <a href="#schedules" class="nav-item"><i class="fa-solid fa-calendar-days"></i> Calendario</a>
-                    <a href="#payment-methods" class="nav-item"><i class="fa-solid fa-credit-card"></i> Métodos de Pago</a>
-                    <a href="#services" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Servicios</a>
-                    <a href="#plans" class="nav-item"><i class="fa-solid fa-tags"></i> Planes</a>
                     <a href="#customer-plans" class="nav-item"><i class="fa-solid fa-address-card"></i> Suscripciones</a>
-                   <!-- <a href="#payments" class="nav-item"><i class="fa-solid fa-money-bills"></i> Pagos</a> -->
-                    <a href="#cash" class="nav-item"><i class="fa-solid fa-cash-register"></i> Caja</a>
+                    <a href="#services" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Servicios</a>
+                    <a href="#plans" class="nav-item"><i class="fa-solid fa-layer-group"></i> Planes</a>
+                    <a href="#schedules" class="nav-item"><i class="fa-solid fa-calendar-days"></i> Horarios</a>
+                    <a href="#inscriptions" class="nav-item"><i class="fa-solid fa-shirt"></i> Inscripciones</a>
+                    <a href="#payment-methods" class="nav-item"><i class="fa-solid fa-credit-card"></i> Métodos de Pago</a>
+                    <a href="#cash" class="nav-item"><i class="fa-solid fa-cash-register"></i> Arqueo de Caja</a>
                     <a href="#logout" class="nav-item mt-2" style="color:var(--danger)"><i class="fa-solid fa-sign-out-alt"></i> Salir</a>
                 </nav>
             </aside>
@@ -41,7 +48,7 @@ function getLayout() {
 }
 
 async function router() {
-    const hash = window.location.hash || '#dashboard';
+    const hash = window.location.hash || '#pos';
     const token = localStorage.getItem('gym_token');
 
     // Protect routes
@@ -76,6 +83,10 @@ async function router() {
 
         // Route mapping
         switch(hash) {
+            case '#pos': await renderPOS(viewContainer); break;
+            case '#products': await renderProducts(viewContainer); break;
+            case '#suppliers': await renderSuppliers(viewContainer); break;
+            case '#discounts': await renderDiscounts(viewContainer); break;
             case '#dashboard': await renderDashboard(viewContainer); break;
             case '#customers': await renderCustomers(viewContainer); break;
             case '#schedules': await renderSchedules(viewContainer); break;
@@ -85,14 +96,20 @@ async function router() {
             case '#plans': await renderPlans(viewContainer); break;
             case '#customer-plans': await renderCustomerPlans(viewContainer); break;
             case '#cash': await renderCashRegister(viewContainer); break;
+            case '#cash-register': await renderCashRegister(viewContainer); break;
             case '#payments': await renderPayments(viewContainer); break;
-            default: await renderDashboard(viewContainer); break;
+            default: await renderPOS(viewContainer); break;
         }
     }
 }
 
 // Listen to URL changes
 window.addEventListener('hashchange', router);
+
+// Listen to custom navigate events (e.g. from POS locked screen)
+window.addEventListener('navigate', (e) => {
+    window.location.hash = `#${e.detail}`;
+});
 
 // Init
 window.addEventListener('DOMContentLoaded', router);

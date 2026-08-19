@@ -3,6 +3,8 @@ import { CustomerPlanStatus, PlanType } from "../domain/entities";
 import { IPlanRepository } from "../repositories/interfaces/IPlanRepository";
 import { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
 import { ICustomerRepository } from "../repositories/interfaces/ICustomerRepository";
+import { ICashRegisterRepository } from "../repositories/interfaces/ICashRegisterRepository";
+import { env } from "../config";
 import fs from "fs";
 import path from "path";
 
@@ -11,7 +13,8 @@ export class PaymentService {
         private paymentRepo: IPaymentRepository,
         private customerPlanRepo: ICustomerPlanRepository,
         private planRepo: IPlanRepository,
-        private customerRepo: ICustomerRepository
+        private customerRepo: ICustomerRepository,
+        private cashRegisterRepo: ICashRegisterRepository
     ) {}
 
     getAllPayments() {
@@ -24,6 +27,11 @@ export class PaymentService {
         paymentMethodId: number;
         receiptImagePath?: string;
     }, userId: number) {
+        const activeRegister = this.cashRegisterRepo.getActiveRegister(userId);
+        if (!activeRegister) {
+            throw new Error("No tienes un turno de caja abierto. Por favor abre caja primero.");
+        }
+
         const planAssignment = this.customerPlanRepo.findById(data.customerPlanId);
         if (!planAssignment) throw new Error("Plan no encontrado");
 
@@ -61,7 +69,7 @@ export class PaymentService {
                 // Extraer extensión del base64
                 const extension = data.receiptImagePath.split(';')[0].split('/')[1] || 'png';
                 const fileName = `recibo_${safeName}_${timestamp}.${extension}`;
-                const uploadDir = path.join(__dirname, "../../public/uploads/receipts");
+                const uploadDir = env.UPLOAD_RECEIPTS_DIR;
 
                 if (!fs.existsSync(uploadDir)) {
                     fs.mkdirSync(uploadDir, { recursive: true });
@@ -74,13 +82,17 @@ export class PaymentService {
                 data.receiptImagePath = `/uploads/receipts/${fileName}`;
             } catch (error: any) {
                 console.error("Error al guardar la imagen del recibo:", error);
-                // No lanzamos error para no bloquear el pago si falla el guardado de imagen, 
-                // o podrías elegir lanzarlo según preferencia del cliente.
             }
         }
 
         // Registrar el pago con auditoría (SQLite no acepta objetos Date como bind param)
-        const payment = this.paymentRepo.create({ ...data, type: 'payment', paidAt: new Date().toISOString() }, userId); // 🌟
+        const paymentData = {
+            ...data,
+            cashRegisterId: activeRegister.id,
+            type: 'payment' as 'payment',
+            paidAt: new Date().toISOString()
+        };
+        const payment = this.paymentRepo.create(paymentData, userId);
 
         // Recalcular estado del plan
         const allPayments = this.paymentRepo.getPaymentsByPlan(data.customerPlanId);

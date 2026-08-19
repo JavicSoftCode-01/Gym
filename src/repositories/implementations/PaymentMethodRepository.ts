@@ -12,10 +12,15 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
         return db.prepare(`SELECT id, name, created_at as createdAt, updated_at as updatedAt FROM payment_methods WHERE id = ?`).get(id) as PaymentMethod | undefined;
     }
 
+    findByName(name: string): PaymentMethod | undefined {
+        const normalized = (name || "").trim();
+        return db.prepare(`SELECT id, name, created_at as createdAt, updated_at as updatedAt FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get(normalized) as PaymentMethod | undefined;
+    }
+
     create(data: { name: string }, userId: number): PaymentMethod {
         const normalized = (data.name || "").trim();
         if (!normalized) throw new Error("El nombre del método de pago es obligatorio.");
-        const existing = db.prepare(`SELECT id FROM payment_methods WHERE lower(name) = lower(?) LIMIT 1`).get(normalized) as { id: number } | undefined;
+        const existing = this.findByName(normalized);
         if (existing) throw new Error("Ese método de pago ya existe.");
 
         const now = new Date().toISOString();

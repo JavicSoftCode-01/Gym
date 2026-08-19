@@ -1,10 +1,8 @@
 // src/database/database.ts
 import Database from "better-sqlite3";
-import path from "path";
+import { env } from "../config";
 
-const DB_PATH = path.resolve(__dirname, "../../gym.db");
-
-const db = new Database(DB_PATH);
+const db = new Database(env.DB_PATH);
 
 // Mejora de rendimiento: escrituras en memoria, flush automático al disco
 db.pragma("journal_mode = WAL");
